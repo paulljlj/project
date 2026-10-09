@@ -6,7 +6,7 @@
 
 ## 当前阶段
 
-第一阶段“数据库交易核心”已经完成：
+数据库交易核心和 DianpingPlus 能力复现已经完成：
 
 - 商家创建与查询
 - 优惠券创建与查询
@@ -15,8 +15,17 @@
 - 一人一单唯一约束
 - Flyway 数据库迁移
 - HTTP 集成测试
+- Redis Cache Aside、空值缓存和随机 TTL
+- 验证码登录、滑动会话和 Bitmap 签到
+- Redis GEO 附近商家检索
+- Redis Lua 秒杀预检与滑动窗口限流
+- Kafka 异步下单和消费幂等
+- 关注、共同关注、博客点赞和 Feed 流
 
 详细说明见 [第一阶段学习笔记](docs/phase-1-core.md)。
+
+DianpingPlus 功能对照、请求链路和手工练习见 [独立复现说明](docs/dianping-plus-reproduction.md)。
+准备自己从数据库基线逐步手写时，使用 [本地手写指南](docs/manual-build-guide.md)。
 
 ## 技术栈
 
@@ -25,6 +34,9 @@
 - Spring Data JPA
 - MySQL 8.4
 - Flyway
+- Redis 7
+- Kafka 3
+- Spring AOP
 - Maven Wrapper
 - JUnit 5、MockMvc、H2
 
@@ -49,8 +61,16 @@ docker compose up -d mysql
 | `GET` | `/api/shops/{id}` | 查询商家详情 |
 | `POST` | `/api/vouchers` | 创建优惠券 |
 | `GET` | `/api/shops/{shopId}/vouchers` | 查询商家优惠券 |
-| `POST` | `/api/orders` | 下单 |
+| `POST` | `/api/orders` | 数据库同步下单基线 |
 | `GET` | `/api/orders/{id}` | 查询订单 |
+| `POST` | `/api/auth/codes` | 生成登录验证码 |
+| `POST` | `/api/auth/sessions` | 登录并取得 token |
+| `GET` | `/api/shops/search` | 分类或 GEO 查询商家 |
+| `POST` | `/api/seckill/vouchers/{id}/orders` | Lua + Kafka 秒杀 |
+| `POST` | `/api/sign-ins/today` | 每日签到 |
+| `GET` | `/api/sign-ins/streak` | 连续签到天数 |
+| `POST/DELETE` | `/api/follows/{userId}` | 关注或取关 |
+| `POST` | `/api/blogs` | 发布笔记并推送 Feed |
 
 ## 学习路线
 
@@ -63,4 +83,3 @@ docker compose up -d mysql
 7. 并发测试与性能对比
 
 完整路线和公开参考项目见 [LEARNING_ROADMAP.md](LEARNING_ROADMAP.md)。
-

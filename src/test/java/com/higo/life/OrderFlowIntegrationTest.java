@@ -9,6 +9,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.higo.life.order.VoucherOrderRepository;
+import com.higo.life.order.OrderService;
 import com.higo.life.shop.ShopRepository;
 import com.higo.life.voucher.VoucherRepository;
 import java.time.LocalDateTime;
@@ -36,6 +37,9 @@ class OrderFlowIntegrationTest {
 
     @Autowired
     VoucherOrderRepository orderRepository;
+
+    @Autowired
+    OrderService orderService;
 
     @Autowired
     VoucherRepository voucherRepository;
@@ -79,6 +83,19 @@ class OrderFlowIntegrationTest {
                 .andExpect(jsonPath("$[0].stock").value(0));
 
         assertThat(orderRepository.count()).isEqualTo(1);
+    }
+
+    @Test
+    void consumesTheSameAsyncRequestOnlyOnce() throws Exception {
+        long shopId = createShop();
+        long voucherId = createVoucher(shopId, 1);
+
+        var first = orderService.placeReserved("request-001", 2001L, voucherId);
+        var replay = orderService.placeReserved("request-001", 2001L, voucherId);
+
+        assertThat(replay.getId()).isEqualTo(first.getId());
+        assertThat(orderRepository.count()).isEqualTo(1);
+        assertThat(voucherRepository.findById(voucherId).orElseThrow().getStock()).isZero();
     }
 
     private long createShop() throws Exception {

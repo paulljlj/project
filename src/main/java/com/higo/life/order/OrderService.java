@@ -50,10 +50,35 @@ public class OrderService {
         return orderRepository.save(new VoucherOrder(userId, voucherId, voucher.getPrice()));
     }
 
+    @Transactional
+    public VoucherOrder placeReserved(String requestId, Long userId, Long voucherId) {
+        VoucherOrder processed = orderRepository.findByRequestId(requestId).orElse(null);
+        if (processed != null) {
+            return processed;
+        }
+        VoucherOrder existing = orderRepository.findByUserIdAndVoucherId(userId, voucherId).orElse(null);
+        if (existing != null) {
+            return existing;
+        }
+        Voucher voucher = voucherRepository.findById(voucherId)
+                .orElseThrow(() -> new NotFoundException("优惠券不存在: " + voucherId));
+        int changedRows = voucherRepository.decrementStock(voucherId);
+        if (changedRows == 0) {
+            throw new ConflictException("数据库库存不足");
+        }
+        return orderRepository.save(new VoucherOrder(requestId, userId, voucherId, voucher.getPrice()));
+    }
+
     @Transactional(readOnly = true)
     public VoucherOrder get(Long id) {
         return orderRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("订单不存在: " + id));
+    }
+
+    @Transactional(readOnly = true)
+    public VoucherOrder getByRequestId(String requestId) {
+        return orderRepository.findByRequestId(requestId)
+                .orElseThrow(() -> new NotFoundException("订单请求尚未完成: " + requestId));
     }
 }
 

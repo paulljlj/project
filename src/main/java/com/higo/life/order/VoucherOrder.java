@@ -34,6 +34,9 @@ public class VoucherOrder {
     @Column(name = "voucher_id", nullable = false)
     private Long voucherId;
 
+    @Column(name = "request_id", unique = true, length = 36)
+    private String requestId;
+
     @Column(nullable = false, precision = 10, scale = 2)
     private BigDecimal amount;
 
@@ -51,6 +54,11 @@ public class VoucherOrder {
     }
 
     public VoucherOrder(Long userId, Long voucherId, BigDecimal amount) {
+        this(null, userId, voucherId, amount);
+    }
+
+    public VoucherOrder(String requestId, Long userId, Long voucherId, BigDecimal amount) {
+        this.requestId = requestId;
         this.userId = userId;
         this.voucherId = voucherId;
         this.amount = amount;
@@ -79,6 +87,10 @@ public class VoucherOrder {
 
     public Long getVoucherId() {
         return voucherId;
+    }
+
+    public String getRequestId() {
+        return requestId;
     }
 
     public BigDecimal getAmount() {

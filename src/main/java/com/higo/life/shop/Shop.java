@@ -27,6 +27,10 @@ public class Shop {
     @Column(nullable = false, length = 255)
     private String address;
 
+    private Double longitude;
+
+    private Double latitude;
+
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
@@ -36,10 +40,20 @@ public class Shop {
     protected Shop() {
     }
 
-    public Shop(String name, String category, String address) {
+    public Shop(String name, String category, String address, Double longitude, Double latitude) {
         this.name = name;
         this.category = category;
         this.address = address;
+        this.longitude = longitude;
+        this.latitude = latitude;
+    }
+
+    public void update(String name, String category, String address, Double longitude, Double latitude) {
+        this.name = name;
+        this.category = category;
+        this.address = address;
+        this.longitude = longitude;
+        this.latitude = latitude;
     }
 
     @PrePersist
@@ -68,6 +82,14 @@ public class Shop {
 
     public String getAddress() {
         return address;
+    }
+
+    public Double getLongitude() {
+        return longitude;
+    }
+
+    public Double getLatitude() {
+        return latitude;
     }
 
     public LocalDateTime getCreatedAt() {

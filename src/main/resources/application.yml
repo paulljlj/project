@@ -17,6 +17,40 @@ spring:
     enabled: true
   jackson:
     time-zone: UTC
+  data:
+    redis:
+      host: ${HIGO_REDIS_HOST:localhost}
+      port: ${HIGO_REDIS_PORT:6379}
+      timeout: 2s
+      repositories:
+        enabled: false
+  kafka:
+    bootstrap-servers: ${HIGO_KAFKA_SERVERS:localhost:9092}
+    consumer:
+      group-id: higo-order-workers
+      auto-offset-reset: earliest
+      enable-auto-commit: false
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        spring.json.trusted.packages: com.higo.life.*
+    listener:
+      ack-mode: record
+    producer:
+      acks: all
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      properties:
+        enable.idempotence: true
+
+higo:
+  redis:
+    enabled: ${HIGO_REDIS_ENABLED:true}
+  kafka:
+    enabled: ${HIGO_KAFKA_ENABLED:true}
+    order-topic: ${HIGO_ORDER_TOPIC:higo.seckill.orders.v1}
+  auth:
+    expose-code: ${HIGO_AUTH_EXPOSE_CODE:true}
 
 server:
   port: ${SERVER_PORT:8080}

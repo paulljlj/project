@@ -17,6 +17,16 @@ public class ApiExceptionHandler {
         return problem(HttpStatus.NOT_FOUND, "资源不存在", exception.getMessage());
     }
 
+    @ExceptionHandler(UnauthorizedException.class)
+    ProblemDetail handleUnauthorized(UnauthorizedException exception) {
+        return problem(HttpStatus.UNAUTHORIZED, "未登录", exception.getMessage());
+    }
+
+    @ExceptionHandler(TooManyRequestsException.class)
+    ProblemDetail handleTooManyRequests(TooManyRequestsException exception) {
+        return problem(HttpStatus.TOO_MANY_REQUESTS, "请求过多", exception.getMessage());
+    }
+
     @ExceptionHandler({ConflictException.class, DataIntegrityViolationException.class})
     ProblemDetail handleConflict(Exception exception) {
         String detail = exception instanceof ConflictException

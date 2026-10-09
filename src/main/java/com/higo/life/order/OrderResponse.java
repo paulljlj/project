@@ -7,6 +7,7 @@ public record OrderResponse(
         Long id,
         Long userId,
         Long voucherId,
+        String requestId,
         BigDecimal amount,
         OrderStatus status,
         LocalDateTime createdAt
@@ -16,6 +17,7 @@ public record OrderResponse(
                 order.getId(),
                 order.getUserId(),
                 order.getVoucherId(),
+                order.getRequestId(),
                 order.getAmount(),
                 order.getStatus(),
                 order.getCreatedAt()

@@ -31,5 +31,10 @@ public class OrderController {
     public OrderResponse get(@PathVariable Long id) {
         return OrderResponse.from(orderService.get(id));
     }
+
+    @GetMapping("/requests/{requestId}")
+    public OrderResponse getByRequestId(@PathVariable String requestId) {
+        return OrderResponse.from(orderService.getByRequestId(requestId));
+    }
 }
 

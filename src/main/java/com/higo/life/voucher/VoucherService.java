@@ -1,11 +1,13 @@
 package com.higo.life.voucher;
 
+import com.higo.life.seckill.SeckillService;
 import com.higo.life.shop.ShopRepository;
 import com.higo.life.support.InvalidRequestException;
 import com.higo.life.support.NotFoundException;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -14,10 +16,16 @@ public class VoucherService {
 
     private final VoucherRepository voucherRepository;
     private final ShopRepository shopRepository;
+    private final ObjectProvider<SeckillService> seckillService;
 
-    public VoucherService(VoucherRepository voucherRepository, ShopRepository shopRepository) {
+    public VoucherService(
+            VoucherRepository voucherRepository,
+            ShopRepository shopRepository,
+            ObjectProvider<SeckillService> seckillService
+    ) {
         this.voucherRepository = voucherRepository;
         this.shopRepository = shopRepository;
+        this.seckillService = seckillService;
     }
 
     @Transactional
@@ -36,9 +44,14 @@ public class VoucherService {
         if (!endAt.isAfter(beginAt)) {
             throw new InvalidRequestException("优惠券结束时间必须晚于开始时间");
         }
-        return voucherRepository.save(
+        Voucher voucher = voucherRepository.save(
                 new Voucher(shopId, title, description, price, stock, beginAt, endAt)
         );
+        SeckillService service = seckillService.getIfAvailable();
+        if (service != null) {
+            service.prepare(voucher);
+        }
+        return voucher;
     }
 
     @Transactional(readOnly = true)
@@ -49,4 +62,3 @@ public class VoucherService {
         return voucherRepository.findByShopIdOrderByIdAsc(shopId);
     }
 }
-

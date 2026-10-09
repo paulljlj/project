@@ -68,6 +68,6 @@ docker compose down
 
 ## 下一阶段
 
-在商家查询接口前加入 Redis Cache Aside 缓存，并实现空值缓存。此时数据库仍然负责库存与订单，便于单独观察缓存对读链路的影响。
+第二阶段已经在商家查询接口前加入 Redis Cache Aside、空值缓存与随机 TTL。继续学习时请按 [本地手写指南](manual-build-guide.md) 从 `learning-start` 标签逐阶段实现。
 
 

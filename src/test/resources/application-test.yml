@@ -15,3 +15,9 @@ spring:
         jdbc:
           time_zone: UTC
 
+higo:
+  redis:
+    enabled: false
+  kafka:
+    enabled: false
+
