@@ -1,0 +1,23 @@
+services:
+  mysql:
+    image: mysql:8.4.6
+    environment:
+      MYSQL_DATABASE: higo
+      MYSQL_USER: higo
+      MYSQL_PASSWORD: higo_dev
+      MYSQL_ROOT_PASSWORD: root_dev
+      TZ: UTC
+    ports:
+      - "3307:3306"
+    volumes:
+      - higo-mysql-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uhigo -phigo_dev --silent"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 20s
+
+volumes:
+  higo-mysql-data:
+

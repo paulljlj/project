@@ -1,0 +1,23 @@
+spring:
+  application:
+    name: higo-life
+  datasource:
+    url: ${HIGO_DB_URL:jdbc:mysql://localhost:3307/higo?useUnicode=true&characterEncoding=utf8&serverTimezone=UTC&allowPublicKeyRetrieval=true&useSSL=false}
+    username: ${HIGO_DB_USERNAME:higo}
+    password: ${HIGO_DB_PASSWORD:higo_dev}
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: UTC
+  flyway:
+    enabled: true
+  jackson:
+    time-zone: UTC
+
+server:
+  port: ${SERVER_PORT:8080}
+
