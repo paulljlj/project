@@ -36,6 +36,8 @@ docker compose up -d
 
 - [本地手写指南](docs/manual-build-guide.md)：从 `learning-start` 标签建立练习分支。
 - [完整版本说明](docs/complete-version.md)：接口、可靠性边界、验证步骤。
+- [DianpingPlus 参考对照](docs/reference-comparison.md)：功能差距、可靠性取舍与后续路线。
+- [多实例秒杀压测](docs/multi-instance-load-guide.md)：两个应用实例下验证不超卖和一人一单。
 - [第一阶段](docs/phase-1-core.md)：数据库核心。
 - [第一版复现记录](docs/dianping-plus-reproduction.md)：历史设计，完整版本以当前文档为准。
 - [学习路线收藏](LEARNING_ROADMAP.md)：之后的公开项目学习路线。
