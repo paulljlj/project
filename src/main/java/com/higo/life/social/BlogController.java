@@ -35,6 +35,10 @@ public class BlogController {
         blogService.toggleLike(id);
     }
 
+    @GetMapping("/{id}") public BlogResponse detail(@PathVariable Long id) { return blogService.detail(id); }
+    @GetMapping("/{id}/likes") public List<UserSummary> likes(@PathVariable Long id) { return blogService.firstLikes(id); }
+    @GetMapping("/of-user/{id}") public List<BlogResponse> byUser(@PathVariable Long id,@RequestParam(defaultValue="0") int page) { return blogService.byUser(id,page); }
+    @GetMapping("/feed/cursor") public BlogService.FeedPage cursor(@RequestParam(defaultValue="9223372036854775807") long beforeId) { return blogService.cursorFeed(beforeId); }
     @GetMapping("/hot")
     public List<BlogResponse> hot(@RequestParam(defaultValue = "0") int page) {
         return blogService.hot(page);

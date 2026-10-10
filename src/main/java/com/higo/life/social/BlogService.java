@@ -21,28 +21,31 @@ public class BlogService {
     private final UserRepository userRepository;
     private final StringRedisTemplate redis;
     private final CurrentUser currentUser;
+    private final BlogLikeRepository likes;
 
     public BlogService(
             BlogRepository blogRepository,
             FollowRepository followRepository,
             UserRepository userRepository,
             StringRedisTemplate redis,
-            CurrentUser currentUser
+            CurrentUser currentUser, BlogLikeRepository likes
     ) {
         this.blogRepository = blogRepository;
         this.followRepository = followRepository;
         this.userRepository = userRepository;
         this.redis = redis;
-        this.currentUser = currentUser;
+        this.currentUser = currentUser; this.likes=likes;
     }
 
     @Transactional
     public BlogResponse publish(CreateBlogRequest request) {
         AuthenticatedUser author = currentUser.require();
-        Blog blog = blogRepository.save(new Blog(author.id(), request.title(), request.content()));
+        Blog draft=new Blog(author.id(),request.title(),request.content());
+        if(request.images()!=null) draft.setImages(String.join(",",request.images()));
+        Blog blog = blogRepository.save(draft);
         long now = System.currentTimeMillis();
         for (Follow follower : followRepository.findByTargetUserId(author.id())) {
-            redis.opsForZSet().add(CacheKeys.FEED + follower.getUserId(), blog.getId().toString(), now);
+            com.higo.life.support.AfterCommit.run(()->redis.opsForZSet().add(CacheKeys.FEED + follower.getUserId(), blog.getId().toString(), now));
         }
         return response(blog);
     }
@@ -50,18 +53,15 @@ public class BlogService {
     @Transactional
     public void toggleLike(Long blogId) {
         Long userId = currentUser.require().id();
-        if (!blogRepository.existsById(blogId)) {
-            throw new NotFoundException("笔记不存在: " + blogId);
-        }
-        String key = CacheKeys.BLOG_LIKES + blogId;
-        Double score = redis.opsForZSet().score(key, userId.toString());
-        int delta = score == null ? 1 : -1;
-        blogRepository.adjustLikes(blogId, delta);
-        if (delta > 0) {
-            redis.opsForZSet().add(key, userId.toString(), System.currentTimeMillis());
-        } else {
-            redis.opsForZSet().remove(key, userId.toString());
-        }
+        Blog blog=blogRepository.lockById(blogId).orElseThrow(()->new NotFoundException("笔记不存在"));
+        var existing=likes.findByBlogIdAndUserId(blogId,userId);
+        boolean adding=existing.isEmpty();
+        if(adding) likes.save(new BlogLike(blogId,userId)); else likes.delete(existing.get());
+        blog.adjustLike(adding?1:-1);
+        com.higo.life.support.AfterCommit.run(()->{
+            if(adding) redis.opsForZSet().add(CacheKeys.BLOG_LIKES+blogId,userId.toString(),System.currentTimeMillis());
+            else redis.opsForZSet().remove(CacheKeys.BLOG_LIKES+blogId,userId.toString());
+        });
     }
 
     @Transactional(readOnly = true)
@@ -82,16 +82,23 @@ public class BlogService {
         List<Long> orderedIds = ids.stream().map(Long::valueOf).toList();
         var blogs = blogRepository.findAllById(orderedIds).stream()
                 .collect(java.util.stream.Collectors.toMap(Blog::getId, value -> value));
-        return orderedIds.stream().filter(blogs::containsKey).map(id -> response(blogs.get(id))).toList();
+        return orderedIds.stream().filter(blogs::containsKey).filter(id->followRepository.existsByUserIdAndTargetUserId(userId,blogs.get(id).getUserId())).map(id -> response(blogs.get(id))).toList();
     }
 
+    public BlogResponse detail(Long id) { return response(blogRepository.findById(id).orElseThrow(()->new NotFoundException("笔记不存在"))); }
+    public List<BlogResponse> byUser(Long id,int page) { return blogRepository.findByUserIdOrderByIdDesc(id,PageRequest.of(Math.max(0,page),10)).stream().map(this::response).toList(); }
+    public List<UserSummary> firstLikes(Long id) { return likes.findByBlogIdOrderByCreatedAtAscIdAsc(id,PageRequest.of(0,5)).stream().map(l->UserSummary.from(userRepository.findById(l.getUserId()).orElseThrow())).toList(); }
+    public record FeedPage(List<BlogResponse> items,Long nextBeforeId,boolean hasMore) {}
+    @Transactional(readOnly=true) public FeedPage cursorFeed(long beforeId) {
+        var rows=blogRepository.followingFeed(currentUser.require().id(),beforeId,PageRequest.of(0,11));
+        var page=rows.stream().limit(10).toList();
+        return new FeedPage(page.stream().map(this::response).toList(),page.isEmpty()?beforeId:page.getLast().getId(),rows.size()>10);
+    }
     private BlogResponse response(Blog blog) {
         User author = userRepository.findById(blog.getUserId())
                 .orElseThrow(() -> new NotFoundException("用户不存在: " + blog.getUserId()));
         AuthenticatedUser viewer = currentUser.optional();
-        boolean liked = viewer != null && redis.opsForZSet().score(
-                CacheKeys.BLOG_LIKES + blog.getId(), viewer.id().toString()
-        ) != null;
+        boolean liked=viewer!=null && likes.existsByBlogIdAndUserId(blog.getId(),viewer.id());
         return BlogResponse.from(blog, author, liked);
     }
 }

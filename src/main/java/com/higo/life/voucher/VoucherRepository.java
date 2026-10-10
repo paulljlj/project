@@ -8,6 +8,12 @@ import org.springframework.data.repository.query.Param;
 
 public interface VoucherRepository extends JpaRepository<Voucher, Long> {
 
+    @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
+    @Query("select v from Voucher v where v.id=:id")
+    java.util.Optional<Voucher> lockById(@Param("id") Long id);
+    @Modifying(clearAutomatically=true,flushAutomatically=true)
+    @Query("update Voucher v set v.stock=v.stock+1 where v.id=:id")
+    int restoreStock(@Param("id") Long id);
     List<Voucher> findByShopIdOrderByIdAsc(Long shopId);
 
     @Modifying(clearAutomatically = true, flushAutomatically = true)

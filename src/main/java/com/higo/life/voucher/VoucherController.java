@@ -16,13 +16,16 @@ import org.springframework.web.bind.annotation.RestController;
 public class VoucherController {
 
     private final VoucherService voucherService;
+    private final com.higo.life.auth.CurrentUser current;
+    private final boolean baseline;
 
-    public VoucherController(VoucherService voucherService) {
-        this.voucherService = voucherService;
+    public VoucherController(VoucherService voucherService,com.higo.life.auth.CurrentUser current,@org.springframework.beans.factory.annotation.Value("${higo.baseline.enabled:false}") boolean baseline) {
+        this.voucherService = voucherService;this.current=current;this.baseline=baseline;
     }
 
     @PostMapping("/vouchers")
     public ResponseEntity<VoucherResponse> create(@Valid @RequestBody CreateVoucherRequest request) {
+        if(!baseline) current.require();
         Voucher voucher = voucherService.create(
                 request.shopId(),
                 request.title(),

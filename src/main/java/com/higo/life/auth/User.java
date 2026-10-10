@@ -26,6 +26,9 @@ public class User {
     @Column(length = 500)
     private String icon;
 
+    @Column(length = 500)
+    private String bio;
+
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
@@ -41,6 +44,11 @@ public class User {
     void onCreate() {
         createdAt = LocalDateTime.now();
     }
+
+    public void update(String nickname, String icon, String bio) {
+        this.nickname = nickname; this.icon = icon; this.bio = bio;
+    }
+    public String getBio() { return bio; }
 
     public Long getId() {
         return id;

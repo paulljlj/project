@@ -18,10 +18,11 @@ public class AuthController {
 
     private final AuthService authService;
     private final CurrentUser currentUser;
+    private final UserRepository users;
 
-    public AuthController(AuthService authService, CurrentUser currentUser) {
+    public AuthController(AuthService authService, CurrentUser currentUser,UserRepository users) {
         this.authService = authService;
-        this.currentUser = currentUser;
+        this.currentUser = currentUser;this.users=users;
     }
 
     @PostMapping("/codes")
@@ -43,7 +44,7 @@ public class AuthController {
 
     @GetMapping("/me")
     public AuthenticatedUser me() {
-        return currentUser.require();
+        return AuthenticatedUser.from(users.findById(currentUser.require().id()).orElseThrow());
     }
 
     @GetMapping("/session-help")

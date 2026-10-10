@@ -12,7 +12,7 @@ public record ShopResponse(
         Double distanceMeters,
         LocalDateTime createdAt
 ) {
-    static ShopResponse from(Shop shop) {
+    public static ShopResponse from(Shop shop) {
         return new ShopResponse(
                 shop.getId(),
                 shop.getName(),

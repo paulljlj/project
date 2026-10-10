@@ -49,7 +49,7 @@ public class VoucherService {
         );
         SeckillService service = seckillService.getIfAvailable();
         if (service != null) {
-            service.prepare(voucher);
+            com.higo.life.support.AfterCommit.run(()->service.prepare(voucher));
         }
         return voucher;
     }

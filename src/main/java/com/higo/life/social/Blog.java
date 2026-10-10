@@ -26,6 +26,8 @@ public class Blog {
     @Column(nullable = false, length = 4000)
     private String content;
 
+    @Column(length=2000) private String images;
+
     @Column(nullable = false)
     private int liked;
 
@@ -46,6 +48,9 @@ public class Blog {
         createdAt = LocalDateTime.now();
     }
 
+    public String getImages() { return images; }
+    public void setImages(String images) { this.images=images; }
+    public void adjustLike(int delta) { liked+=delta; }
     public Long getId() {
         return id;
     }

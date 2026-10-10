@@ -16,6 +16,8 @@ spring:
           time_zone: UTC
 
 higo:
+  baseline:
+    enabled: true
   redis:
     enabled: false
   kafka:

@@ -42,6 +42,7 @@ public class Follow {
         createdAt = LocalDateTime.now();
     }
 
+    public Long getTargetUserId() { return targetUserId; }
     public Long getUserId() {
         return userId;
     }

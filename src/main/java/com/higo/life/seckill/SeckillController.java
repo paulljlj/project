@@ -25,6 +25,12 @@ public class SeckillController {
         this.seckillService = seckillService;
     }
 
+    @org.springframework.web.bind.annotation.GetMapping("/requests/{id}")
+    public SeckillService.RequestState state(@PathVariable String id) { return seckillService.state(id); }
+    @PostMapping("/requests/{id}/retry") @ResponseStatus(HttpStatus.ACCEPTED)
+    public void retry(@PathVariable String id) { seckillService.replay(id); }
+    @PostMapping("/vouchers/{voucherId}/reconcile") @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void reconcile(@PathVariable Long voucherId) { seckillService.reconcile(voucherId); }
     @PostMapping("/vouchers/{voucherId}/orders")
     @ResponseStatus(HttpStatus.ACCEPTED)
     @RateLimit(windowSeconds = 10, permits = 5, dimension = RateLimitDimension.USER)

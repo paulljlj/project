@@ -77,6 +77,8 @@ public class VoucherOrder {
         updatedAt = LocalDateTime.now();
     }
 
+    public void pay() { status=OrderStatus.PAID; }
+    public void cancel() { status=OrderStatus.CANCELLED; }
     public Long getId() {
         return id;
     }

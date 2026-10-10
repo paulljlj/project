@@ -1,85 +1,41 @@
-# 嗨go生活学习项目
+# 嗨Go · DianpingPlus 学习复现
 
-这是一个从零实现的本地生活与高并发优惠券系统，用来分阶段学习 Spring Boot、JPA、MySQL、Redis、Lua 和 Kafka。
+一个可以在浏览器操作的本地生活学习项目：商家与优惠券、登录签到、探店笔记、关注和秒杀订单。独立实现参考项目的业务能力，使用 Java 21 / Spring Boot 3.5 / JPA，并非原仓库代码或接口的逐字复制。
 
-项目不会直接复制公开仓库代码。每个阶段先建立一个可以运行和验证的基线，再引入新技术解决明确的问题。
+## 本地运行
 
-## 当前阶段
-
-数据库交易核心和 DianpingPlus 能力复现已经完成：
-
-- 商家创建与查询
-- 优惠券创建与查询
-- 用户下单与订单查询
-- 数据库原子扣减库存
-- 一人一单唯一约束
-- Flyway 数据库迁移
-- HTTP 集成测试
-- Redis Cache Aside、空值缓存和随机 TTL
-- 验证码登录、滑动会话和 Bitmap 签到
-- Redis GEO 附近商家检索
-- Redis Lua 秒杀预检与滑动窗口限流
-- Kafka 异步下单和消费幂等
-- 关注、共同关注、博客点赞和 Feed 流
-
-详细说明见 [第一阶段学习笔记](docs/phase-1-core.md)。
-
-DianpingPlus 功能对照、请求链路和手工练习见 [独立复现说明](docs/dianping-plus-reproduction.md)。
-准备自己从数据库基线逐步手写时，使用 [本地手写指南](docs/manual-build-guide.md)。
-
-## 技术栈
-
-- Java 21
-- Spring Boot 3.5
-- Spring Data JPA
-- MySQL 8.4
-- Flyway
-- Redis 7
-- Kafka 3
-- Spring AOP
-- Maven Wrapper
-- JUnit 5、MockMvc、H2
-
-## 快速开始
-
-准备 JDK 21 和 Docker，然后执行：
+安装 JDK 21 和 Docker：
 
 ```bash
-docker compose up -d mysql
+git clone https://github.com/paulljlj/project.git
+cd project
+docker compose up -d
 ./mvnw test
 ./mvnw spring-boot:run
 ```
 
-应用默认地址为 `http://localhost:8080`，MySQL 使用宿主机端口 `3307`。
+打开 **http://localhost:8080**。先登录：填写手机号并点获取验证码，学习模式会显示验证码。添加商家 → 查看好店 → 发布优惠券 → 抢购 → 我的订单。也可以发布带图片的笔记、点赞评论、关注作者和签到。活动时间按 UTC 输入。
 
-## 核心接口
+没有预置商家；你在页面创建的数据保存在 MySQL。上传文件保存在 `data/uploads`，会话保存在浏览器 sessionStorage。MySQL 的本地端口为 3307，Redis 为 6379，Kafka 为 9092。Docker 数据卷保留数据库和消息。
 
-| 方法 | 路径 | 用途 |
-| --- | --- | --- |
-| `POST` | `/api/shops` | 创建商家 |
-| `GET` | `/api/shops` | 查询商家列表 |
-| `GET` | `/api/shops/{id}` | 查询商家详情 |
-| `POST` | `/api/vouchers` | 创建优惠券 |
-| `GET` | `/api/shops/{shopId}/vouchers` | 查询商家优惠券 |
-| `POST` | `/api/orders` | 数据库同步下单基线 |
-| `GET` | `/api/orders/{id}` | 查询订单 |
-| `POST` | `/api/auth/codes` | 生成登录验证码 |
-| `POST` | `/api/auth/sessions` | 登录并取得 token |
-| `GET` | `/api/shops/search` | 分类或 GEO 查询商家 |
-| `POST` | `/api/seckill/vouchers/{id}/orders` | Lua + Kafka 秒杀 |
-| `POST` | `/api/sign-ins/today` | 每日签到 |
-| `GET` | `/api/sign-ins/streak` | 连续签到天数 |
-| `POST/DELETE` | `/api/follows/{userId}` | 关注或取关 |
-| `POST` | `/api/blogs` | 发布笔记并推送 Feed |
+## 已实现
 
-## 学习路线
+- 验证码一次性消费、登录注销、会话续期、个人资料、Bitmap 签到。
+- 商家分类/店名搜索、GEO 附近查询、空值缓存、随机 TTL、热点逻辑过期与异步重建。
+- 图片上传与归属校验、图文笔记、持久化点赞、评论、关注/共同关注、稳定游标 Feed。
+- Lua 秒杀资格预留、一人一单、数据库条件扣库存、请求状态与订单归属校验。
+- 数据库 Outbox 投递 Kafka、幂等消费、失败重试、死信记录与重放、Redis 库存重建。
+- 模拟支付、幂等取消、30 分钟未支付自动取消与库存归还，行锁保护状态竞争。
+- AOP + Lua 滑动窗口限流、Flyway 迁移、独立网页。
 
-1. ✅ MySQL 同步交易核心
-2. Redis Cache Aside 与缓存治理
-3. Redis + Lua 秒杀资格预检
-4. Kafka 异步创建订单
-5. 消费幂等、失败重试与补偿
-6. 支付、关单和乐观锁
-7. 并发测试与性能对比
+验证码和支付用于学习，未连接短信或支付平台。登录用户都可维护商家/优惠券，尚未实现运营管理员角色。数据库锁保证正确性但会串行化同一优惠券操作；本项目不声称达到生产秒杀吞吐量。
 
-完整路线和公开参考项目见 [LEARNING_ROADMAP.md](LEARNING_ROADMAP.md)。
+## 验证与学习
+
+默认 `./mvnw test` 执行 H2 数据库基线测试；真实 MySQL/Redis/Kafka 测试需显式开启，见 [完整版本说明](docs/complete-version.md)。不要把集成测试指向个人开发数据库。
+
+- [本地手写指南](docs/manual-build-guide.md)：从 `learning-start` 标签建立练习分支。
+- [完整版本说明](docs/complete-version.md)：接口、可靠性边界、验证步骤。
+- [第一阶段](docs/phase-1-core.md)：数据库核心。
+- [第一版复现记录](docs/dianping-plus-reproduction.md)：历史设计，完整版本以当前文档为准。
+- [学习路线收藏](LEARNING_ROADMAP.md)：之后的公开项目学习路线。

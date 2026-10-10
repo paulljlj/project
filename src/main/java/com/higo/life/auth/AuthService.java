@@ -51,8 +51,10 @@ public class AuthService {
 
     @Transactional
     public SessionResponse login(LoginRequest request) {
-        String expected = redis.opsForValue().get(CacheKeys.LOGIN_CODE + request.phone());
-        if (expected == null || !expected.equals(request.code())) {
+        var script = new org.springframework.data.redis.core.script.DefaultRedisScript<Long>(
+                "if redis.call('GET', KEYS[1]) == ARGV[1] then redis.call('DEL', KEYS[1]); return 1 else return 0 end", Long.class);
+        Long consumed = redis.execute(script, java.util.List.of(CacheKeys.LOGIN_CODE + request.phone()), request.code());
+        if (!Long.valueOf(1).equals(consumed)) {
             throw new ConflictException("验证码错误或已过期");
         }
         User user = userRepository.findByPhone(request.phone())
@@ -64,7 +66,6 @@ public class AuthService {
         redis.opsForValue().set(
                 CacheKeys.SESSION + token, write(authenticatedUser), SESSION_TTL
         );
-        redis.delete(CacheKeys.LOGIN_CODE + request.phone());
         return new SessionResponse(token, authenticatedUser);
     }
 

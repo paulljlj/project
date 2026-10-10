@@ -5,4 +5,5 @@ target/
 .DS_Store
 *.log
 .env
-
+data/
+.env.local

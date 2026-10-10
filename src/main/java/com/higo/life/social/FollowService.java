@@ -34,6 +34,7 @@ public class FollowService {
     @Transactional
     public void follow(Long targetUserId) {
         Long userId = currentUser.require().id();
+        userRepository.lockById(userId).orElseThrow(()->new NotFoundException("用户不存在"));
         if (userId.equals(targetUserId)) {
             throw new ConflictException("不能关注自己");
         }
@@ -43,16 +44,21 @@ public class FollowService {
         if (!followRepository.existsByUserIdAndTargetUserId(userId, targetUserId)) {
             followRepository.save(new Follow(userId, targetUserId));
         }
-        redis.opsForSet().add(CacheKeys.FOLLOWING + userId, targetUserId.toString());
+        com.higo.life.support.AfterCommit.run(()->redis.opsForSet().add(CacheKeys.FOLLOWING + userId, targetUserId.toString()));
     }
 
     @Transactional
     public void unfollow(Long targetUserId) {
         Long userId = currentUser.require().id();
+        userRepository.lockById(userId).orElseThrow(()->new NotFoundException("用户不存在"));
         followRepository.deleteByUserIdAndTargetUserId(userId, targetUserId);
-        redis.opsForSet().remove(CacheKeys.FOLLOWING + userId, targetUserId.toString());
+        com.higo.life.support.AfterCommit.run(()->redis.opsForSet().remove(CacheKeys.FOLLOWING + userId, targetUserId.toString()));
     }
 
+    private void snapshot(String key,Long id) {
+        String[] values=followRepository.findByUserId(id).stream().map(f->f.getTargetUserId().toString()).toArray(String[]::new);
+        if(values.length>0) { redis.opsForSet().add(key,values);redis.expire(key,java.time.Duration.ofSeconds(30)); }
+    }
     @Transactional(readOnly = true)
     public boolean isFollowing(Long targetUserId) {
         return followRepository.existsByUserIdAndTargetUserId(currentUser.require().id(), targetUserId);
@@ -61,9 +67,14 @@ public class FollowService {
     @Transactional(readOnly = true)
     public List<UserSummary> common(Long otherUserId) {
         Long userId = currentUser.require().id();
-        Set<String> ids = redis.opsForSet().intersect(
-                CacheKeys.FOLLOWING + userId, CacheKeys.FOLLOWING + otherUserId
-        );
+        // Isolated snapshots preserve Set-intersection learning without overwriting shared sets.
+        String left=CacheKeys.FOLLOWING+"snapshot:"+java.util.UUID.randomUUID();
+        String right=CacheKeys.FOLLOWING+"snapshot:"+java.util.UUID.randomUUID();
+        Set<String> ids;
+        try {
+            snapshot(left,userId);snapshot(right,otherUserId);
+            ids=redis.opsForSet().intersect(left,right);
+        } finally { redis.delete(List.of(left,right)); }
         if (ids == null || ids.isEmpty()) {
             return List.of();
         }

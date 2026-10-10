@@ -15,15 +15,17 @@ public class OrderService {
     private final VoucherOrderRepository orderRepository;
     private final VoucherRepository voucherRepository;
     private final Clock clock;
+    private final com.higo.life.seckill.OrderRequestRepository requests;
+    private final org.springframework.data.redis.core.StringRedisTemplate redis;
 
     public OrderService(
             VoucherOrderRepository orderRepository,
             VoucherRepository voucherRepository,
-            Clock clock
+            Clock clock,com.higo.life.seckill.OrderRequestRepository requests,org.springframework.data.redis.core.StringRedisTemplate redis
     ) {
         this.orderRepository = orderRepository;
         this.voucherRepository = voucherRepository;
-        this.clock = clock;
+        this.clock = clock;this.requests=requests;this.redis=redis;
     }
 
     @Transactional
@@ -52,23 +54,42 @@ public class OrderService {
 
     @Transactional
     public VoucherOrder placeReserved(String requestId, Long userId, Long voucherId) {
+        Voucher voucher = voucherRepository.lockById(voucherId)
+                .orElseThrow(() -> new NotFoundException("优惠券不存在"));
+        var request=requests.lockById(requestId).orElse(null);
+        if(request!=null && (!request.getUserId().equals(userId)||!request.getVoucherId().equals(voucherId))) throw new ConflictException("消息与请求不匹配");
         VoucherOrder processed = orderRepository.findByRequestId(requestId).orElse(null);
         if (processed != null) {
+            if(request!=null) { request.completed(); requests.save(request); }
             return processed;
         }
         VoucherOrder existing = orderRepository.findByUserIdAndVoucherId(userId, voucherId).orElse(null);
         if (existing != null) {
+            if(request!=null) { request.completed(); requests.save(request); }
             return existing;
         }
-        Voucher voucher = voucherRepository.findById(voucherId)
-                .orElseThrow(() -> new NotFoundException("优惠券不存在: " + voucherId));
         int changedRows = voucherRepository.decrementStock(voucherId);
         if (changedRows == 0) {
             throw new ConflictException("数据库库存不足");
         }
-        return orderRepository.save(new VoucherOrder(requestId, userId, voucherId, voucher.getPrice()));
+        if(request!=null) { request.completed(); requests.save(request); }
+        return orderRepository.saveAndFlush(new VoucherOrder(requestId, userId, voucherId, voucher.getPrice()));
     }
 
+    public java.util.List<VoucherOrder> mine(Long userId) { return orderRepository.findByUserIdOrderByIdDesc(userId); }
+    @Transactional public VoucherOrder transition(Long id,Long userId,boolean payment) {
+        var o=orderRepository.lockById(id).orElseThrow(()->new NotFoundException("订单不存在"));
+        if(!o.getUserId().equals(userId)) throw new NotFoundException("订单不存在");
+        if(payment && o.getStatus()==OrderStatus.PAID || !payment && o.getStatus()==OrderStatus.CANCELLED) return o;
+        if(o.getStatus()!=OrderStatus.CREATED) throw new ConflictException("订单状态不允许此操作");
+        if(payment) o.pay(); else {
+            o.cancel(); voucherRepository.restoreStock(o.getVoucherId());
+            com.higo.life.support.AfterCommit.run(()->redis.execute(new org.springframework.data.redis.core.script.DefaultRedisScript<Long>(
+                "if redis.call('EXISTS',KEYS[1])==1 then return redis.call('INCR',KEYS[1]) else return 0 end",Long.class),
+                java.util.List.of(com.higo.life.cache.CacheKeys.SECKILL_STOCK+o.getVoucherId())));
+        }
+        return orderRepository.save(o);
+    }
     @Transactional(readOnly = true)
     public VoucherOrder get(Long id) {
         return orderRepository.findById(id)

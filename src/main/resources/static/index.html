@@ -1,0 +1,11 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>嗨Go · 发现身边好生活</title><link rel="stylesheet" href="/style.css"></head>
+<body>
+<header><a href="/" class="brand">嗨<span>Go</span><small>发现身边好生活</small></a><nav><button data-view="shops" class="active">附近好店</button><button data-view="blogs">探店笔记</button><button data-view="feed">我的关注</button><button data-view="orders">我的订单</button></nav><button id="account">登录 / 注册</button></header>
+<main><section class="hero"><div><p class="eyebrow">YOUR NEXT FAVORITE PLACE</p><h1>好生活，<br>就在转角。</h1><p>找一家好店，尝一口新味道。<br>把喜欢的日常，分享给同样热爱生活的人。</p><button id="discover">发现好店 ↗</button></div><div class="hero-art" aria-hidden="true"><span class="cup">☕</span><span class="caption">一杯咖啡的时间<br><b>遇见新的日常</b></span><span class="dot">HI, GOOD DAY.</span></div></section>
+<section class="content"><div class="section-head"><div><p class="eyebrow">EXPLORE YOUR NEIGHBORHOOD</p><h2 id="heading">附近好店</h2></div><div class="actions"><button id="create-shop">＋ 添加商家</button><button id="publish">＋ 写笔记</button></div></div>
+<form id="search" class="search"><input name="name" placeholder="搜索店名，找到你的下一站" aria-label="店名"><select name="category" aria-label="商家分类"><option value="">所有分类</option></select><button type="submit">搜索</button><button type="button" id="locate">附近 5 公里</button></form>
+<div id="list" class="grid" aria-live="polite"></div><button id="more" hidden>加载更多</button></section></main>
+<footer>嗨Go 生活 · 把每一个平常日子，过得有滋有味。</footer><div id="toast" role="status"></div>
+<dialog id="modal"><button class="close" aria-label="关闭">×</button><div id="modal-body"></div></dialog>
+<script src="/app.js" defer></script></body></html>
